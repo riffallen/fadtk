@@ -80,20 +80,13 @@ def calc_frechet_distance(mu1, cov1, mu2, cov2, eps=1e-6):
     diff = mu1 - mu2
 
     # Product might be almost singular
-    # NOTE: issues with sqrtm for newer scipy versions
-    # using eigenvalue method as workaround
-    covmean_sqrtm, _ = linalg.sqrtm(cov1.dot(cov2), disp=False)
-    
-    # eigenvalue method
-    D, V = linalg.eig(cov1.dot(cov2))
-    covmean = (V * scisqrt(D)) @ linalg.inv(V)
-
+    covmean, _ = linalg.sqrtm(cov1.dot(cov2).astype(complex), disp=False)
     if not np.isfinite(covmean).all():
         msg = ('fid calculation produces singular product; '
             'adding %s to diagonal of cov estimates') % eps
         log.info(msg)
         offset = np.eye(cov1.shape[0]) * eps
-        covmean = linalg.sqrtm((cov1 + offset).dot(cov2 + offset))
+        covmean = linalg.sqrtm((cov1 + offset).dot(cov2 + offset).astype(complex))
 
     # Numerical error might give slight imaginary component
     if np.iscomplexobj(covmean):
@@ -103,15 +96,6 @@ def calc_frechet_distance(mu1, cov1, mu2, cov2, eps=1e-6):
         covmean = covmean.real
 
     tr_covmean = np.trace(covmean)
-    tr_covmean_sqrtm = np.trace(covmean_sqrtm)
-    if np.iscomplexobj(tr_covmean_sqrtm):
-        if np.abs(tr_covmean_sqrtm.imag) < 1e-3:
-            tr_covmean_sqrtm = tr_covmean_sqrtm.real
-
-    if not(np.iscomplexobj(tr_covmean_sqrtm)):
-        delt = np.abs(tr_covmean - tr_covmean_sqrtm)
-        if delt > 1e-3:
-            log.warning(f'Detected high error in sqrtm calculation: {delt}')
 
     return (diff.dot(diff) + np.trace(cov1)
             + np.trace(cov2) - 2 * tr_covmean)
