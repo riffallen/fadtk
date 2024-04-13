@@ -98,7 +98,7 @@ def calc_frechet_distance(mu1, cov1, mu2, cov2, eps=1e-6):
     tr_covmean = np.trace(covmean)
 
     return (diff.dot(diff) + np.trace(cov1)
-            + np.trace(cov2) - 2 * tr_covmean)
+            + np.trace(cov2) - 2 * tr_covmean).astype(np.float64)
 
 
 class FrechetAudioDistance:
